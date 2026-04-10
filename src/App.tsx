@@ -432,6 +432,8 @@ export default function App() {
     }
   }, [gameState]);
 
+  const localPlayer = useMemo(() => players.find(p => p.id === playerId), [players, playerId]);
+
   // --- Audio / Effects ---
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
 
@@ -1062,9 +1064,9 @@ export default function App() {
 
   // --- UI Helpers ---
   const playerHandScore = useMemo(() => {
-    if (players.length === 0 || !players[0]?.hand) return 0;
-    return players[0].hand.reduce((sum, c) => sum + c.value, 0);
-  }, [players]);
+    if (!localPlayer || !localPlayer.hand) return 0;
+    return localPlayer.hand.reduce((sum, c) => sum + c.value, 0);
+  }, [localPlayer]);
 
   const leaderId = useMemo(() => {
     if (players.length === 0) return -1;
@@ -1682,7 +1684,7 @@ export default function App() {
                   exit={{ opacity: 0 }}
                   className="text-white/20 text-[10px] font-bold uppercase tracking-widest"
                 >
-                  {players[0]?.hand.length > 0 ? 'Tap a card to select · Drag to play area' : ''}
+                  {(localPlayer?.hand?.length || 0) > 0 ? 'Tap a card to select · Drag to play area' : ''}
                 </motion.span>
               )}
             </AnimatePresence>
@@ -1720,16 +1722,16 @@ export default function App() {
         {/* Player Hand */}
         <div className="player-hand w-full max-w-5xl flex flex-col items-center overflow-visible -mt-8 relative z-10">
           <div className="card-fan">
-            {players[0]?.hand.map((card, i) => (
+            {(localPlayer?.hand || []).map((card, i) => (
               <Card
                 key={card.id}
                 card={card}
                 index={i}
-                total={players[0].hand.length}
+                total={(localPlayer?.hand || []).length}
                 isSelected={selectedCardIds.includes(card.id)}
                 onClick={() => handleCardSelect(card.id)}
                 onDoubleClick={() => handleCardDoubleClick(card.id)}
-                isPlayable={currentPlayerIndex === 0 && turnPhase === TurnPhase.SELECTING && !isRoundEnding}
+                isPlayable={currentPlayerIndex === (players.indexOf(localPlayer!) ?? -1) && turnPhase === TurnPhase.SELECTING && !isRoundEnding}
                 onDragStart={() => handleDragStart(card.id)}
                 onDrag={handleDrag}
                 onDragEnd={(e, info) => handleDragEnd(card.id, info)}
