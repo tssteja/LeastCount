@@ -415,7 +415,9 @@ export default function App() {
     if (gameState) {
       if (gameState.status && status !== gameState.status) setStatus(gameState.status);
       if (gameState.players) {
-        const sortedPlayers = Object.values(gameState.players).sort((a: any, b: any) => a.order - b.order) as Player[];
+        const sortedPlayers = Object.values(gameState.players)
+          .map((p: any) => ({ ...p, hand: p.hand || [], score: p.score || 0 }))
+          .sort((a: any, b: any) => a.order - b.order) as Player[];
         setPlayers(sortedPlayers);
       }
       if (gameState.playerCount) setPlayerCount(gameState.playerCount);
@@ -837,12 +839,12 @@ export default function App() {
     setIsRoundEnding(true);
     
     const caller = players[currentPlayerIndex];
-    const callerScore = caller.hand.reduce((sum, c) => sum + c.value, 0);
+    const callerScore = (caller.hand || []).reduce((sum, c) => sum + c.value, 0);
 
     // Resolution
     const allScores = players.map(p => ({
       id: p.id,
-      score: p.hand.reduce((sum, c) => sum + c.value, 0)
+      score: (p.hand || []).reduce((sum, c) => sum + c.value, 0)
     }));
 
     const minScore = Math.min(...allScores.map(s => s.score));
@@ -854,7 +856,7 @@ export default function App() {
     let roundWinnerPlayer: Player | null = null;
     
     const updatedPlayers = players.map(p => {
-      let roundPoints = p.hand.reduce((sum, c) => sum + c.value, 0);
+      let roundPoints = (p.hand || []).reduce((sum, c) => sum + c.value, 0);
       
       if (p.id === caller.id) {
         if (!isCallerWinner) {
@@ -1037,7 +1039,7 @@ export default function App() {
           }
 
           // Check if bot should call Least Count
-          const botScore = bot.hand.reduce((sum, c) => sum + c.value, 0);
+          const botScore = (bot.hand || []).reduce((sum, c) => sum + c.value, 0);
           if (botScore < initialCardCount && Math.random() > 0.5) {
             callLeastCount();
           } else {
@@ -1060,7 +1062,7 @@ export default function App() {
 
   // --- UI Helpers ---
   const playerHandScore = useMemo(() => {
-    if (players.length === 0) return 0;
+    if (players.length === 0 || !players[0]?.hand) return 0;
     return players[0].hand.reduce((sum, c) => sum + c.value, 0);
   }, [players]);
 
