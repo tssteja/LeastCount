@@ -4,6 +4,10 @@
  */
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { useFirebaseRoom } from './useFirebaseRoom';
+import { database } from './firebase';
+import { ref, update, get } from 'firebase/database';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { 
@@ -361,6 +365,15 @@ const PlayerAvatar: React.FC<{ player: Player; position: string; isWinner?: bool
 
 export default function App() {
   // --- Game State ---
+  const [playerId] = useState(() => {
+    let id = localStorage.getItem('least_count_player_id');
+    if (!id) {
+      id = uuidv4();
+      localStorage.setItem('least_count_player_id', id);
+    }
+    return id;
+  });
+
   const [status, setStatus] = useState<GameStatus>(GameStatus.HOME);
   const [userName, setUserName] = useState("");
   const [roomCodeInput, setRoomCodeInput] = useState("");
@@ -395,6 +408,27 @@ export default function App() {
 
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const actionLockRef = useRef(false);
+
+  const { gameState } = useFirebaseRoom(roomCode, playerId, userName);
+
+  useEffect(() => {
+    if (gameState) {
+      if (gameState.status && status !== gameState.status) setStatus(gameState.status);
+      if (gameState.players) {
+        const sortedPlayers = Object.values(gameState.players).sort((a: any, b: any) => a.order - b.order) as Player[];
+        setPlayers(sortedPlayers);
+      }
+      if (gameState.playerCount) setPlayerCount(gameState.playerCount);
+      if (gameState.deck) setDeck(gameState.deck);
+      if (gameState.discardPile) setDiscardPile(gameState.discardPile);
+      if (gameState.joker) setJoker(gameState.joker);
+      if (gameState.currentPlayerIndex !== undefined) setCurrentPlayerIndex(gameState.currentPlayerIndex);
+      if (gameState.playAreaCards) setPlayAreaCards(gameState.playAreaCards);
+      if (gameState.turnPhase) setTurnPhase(gameState.turnPhase);
+      if (gameState.isRoundEnding !== undefined) setIsRoundEnding(gameState.isRoundEnding);
+      if (gameState.roundWinner) setRoundWinner(gameState.roundWinner);
+    }
+  }, [gameState]);
 
   // --- Audio / Effects ---
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
@@ -501,17 +535,28 @@ export default function App() {
       [newDeck[i], newDeck[j]] = [newDeck[j], newDeck[i]];
     }
 
-    // Create new players with current scores
-    const newPlayers: Player[] = Array.from({ length: playerCount }).map((_, i) => ({
-      id: i,
-      name: i === 0 ? userName || "You" : `Player ${i}`,
-      avatar: `https://picsum.photos/seed/${i === 0 ? userName || "You" : `p${i}`}/100`,
-      hand: [],
-      isActive: false,
-      score: players.find(p => p.id === i)?.score || 0,
-      isBot: i !== 0,
-      isHost: i === 0,
-    }));
+    const existingPlayers = gameState?.players ? Object.values(gameState.players).sort((a: any, b: any) => a.order - b.order) as Player[] : players;
+
+    // Create new players preserving joined real players
+    const newPlayers: Player[] = Array.from({ length: playerCount }).map((_, i) => {
+      const realPlayer = existingPlayers[i];
+      if (realPlayer) {
+        return { ...realPlayer, hand: [], isActive: false };
+      }
+      return {
+        id: `bot-${i}`,
+        name: `Bot ${i+1}`,
+        avatar: `https://picsum.photos/seed/bot${i}/100`,
+        hand: [],
+        isActive: false,
+        score: 0,
+        isBot: true,
+        isHost: false,
+        order: i,
+        // @ts-ignore
+        orderIndex: i
+      };
+    });
 
     // Initial Table Setup - Pick Joker BEFORE dealing
     const jokerIndex = Math.floor(Math.random() * newDeck.length);
@@ -549,6 +594,28 @@ export default function App() {
     setJoker(jokerCard);
     setPlayers(newPlayers);
     setCurrentPlayerIndex(startIndex);
+
+    if (roomCode) {
+      const roomRef = ref(database, `rooms/${roomCode}`);
+      const playersObj: Record<string, Player> = {};
+      newPlayers.forEach((p, i) => {
+         p.order = i;
+         playersObj[p.id.toString()] = p; // Ensure string key
+      });
+
+      update(roomRef, {
+        status: GameStatus.PLAYING,
+        deck: newDeck,
+        discardPile: [startCard],
+        joker: jokerCard,
+        players: playersObj,
+        currentPlayerIndex: startIndex,
+        turnPhase: TurnPhase.SELECTING,
+        timeLeft: TURN_TIME,
+        playAreaCards: [],
+        lastPlayedCards: []
+      });
+    }
     actionLockRef.current = false;
     setIsProcessingAction(false);
     
@@ -1104,9 +1171,28 @@ export default function App() {
                 {/* Right Side */}
                 <div className="flex-1 w-full space-y-6 md:space-y-8">
                   <button 
-                    onClick={() => {
+                    onClick={async () => {
                       const code = Math.random().toString(36).substring(2, 8).toUpperCase();
                       setRoomCode(code);
+                      const roomRef = ref(database, `rooms/${code}`);
+                      await update(roomRef, {
+                        status: GameStatus.ROOM,
+                        hostId: playerId,
+                        playerCount: playerCount,
+                        players: {
+                          [playerId]: {
+                            id: playerId,
+                            name: userName || "Host",
+                            avatar: `https://picsum.photos/seed/${playerId}/100`,
+                            hand: [],
+                            isActive: false,
+                            score: 0,
+                            isBot: false,
+                            isHost: true,
+                            order: 0,
+                          }
+                        }
+                      });
                       setStatus(GameStatus.ROOM);
                     }}
                     className="w-full py-4 md:py-6 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-white font-black text-base md:text-lg uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 md:gap-4"
@@ -1129,10 +1215,29 @@ export default function App() {
                       className="flex-1 min-w-0 px-4 py-3 md:px-8 md:py-5 bg-white/5 border border-white/10 rounded-2xl text-white font-mono text-base md:text-xl tracking-widest placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
                     />
                     <button 
-                      onClick={() => {
+                      onClick={async () => {
                         if (roomCodeInput.length === 6) {
-                          setRoomCode(roomCodeInput);
-                          setStatus(GameStatus.ROOM);
+                          const roomRef = ref(database, `rooms/${roomCodeInput}`);
+                          const snap = await get(roomRef);
+                          if (snap.exists()) {
+                            setRoomCode(roomCodeInput);
+                            await update(roomRef, {
+                              [`players/${playerId}`]: {
+                                id: playerId,
+                                name: userName || "Guest",
+                                avatar: `https://picsum.photos/seed/${playerId}/100`,
+                                hand: [],
+                                isActive: false,
+                                score: 0,
+                                isBot: false,
+                                isHost: false,
+                                order: Object.keys(snap.val().players || {}).length,
+                              }
+                            });
+                            setStatus(GameStatus.ROOM);
+                          } else {
+                            showMessage("Room not found. Check the code.", "error");
+                          }
                         } else {
                           showMessage("Invalid room code", "error");
                         }
