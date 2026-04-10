@@ -1059,7 +1059,7 @@ export default function App() {
                       placeholder="Enter your name..."
                       value={userName}
                       onChange={(e) => setUserName(e.target.value)}
-                      className="w-full px-6 py-4 md:px-8 md:py-5 bg-white/5 border border-white/10 rounded-2xl text-white text-base md:text-lg placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all shadow-inner"
+                      className="w-full px-4 py-3 md:px-8 md:py-5 bg-white/5 border border-white/10 rounded-2xl text-white text-base md:text-lg placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all shadow-inner"
                     />
                   </div>
                   <button 
@@ -1109,7 +1109,7 @@ export default function App() {
                       setRoomCode(code);
                       setStatus(GameStatus.ROOM);
                     }}
-                    className="w-full py-4 md:py-6 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-white font-black text-base md:text-lg uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4"
+                    className="w-full py-4 md:py-6 bg-indigo-600 hover:bg-indigo-500 rounded-2xl text-white font-black text-base md:text-lg uppercase tracking-[0.2em] shadow-2xl shadow-indigo-500/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 md:gap-4"
                   >
                     <Plus className="w-5 h-5 md:w-6 md:h-6" />
                     Create New Game
@@ -1126,7 +1126,7 @@ export default function App() {
                       placeholder="ROOM CODE"
                       value={roomCodeInput}
                       onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
-                      className="flex-1 px-6 py-4 md:px-8 md:py-5 bg-white/5 border border-white/10 rounded-2xl text-white font-mono text-lg md:text-xl tracking-widest placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                      className="flex-1 min-w-0 px-4 py-3 md:px-8 md:py-5 bg-white/5 border border-white/10 rounded-2xl text-white font-mono text-base md:text-xl tracking-widest placeholder:text-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
                     />
                     <button 
                       onClick={() => {
@@ -1137,7 +1137,7 @@ export default function App() {
                           showMessage("Invalid room code", "error");
                         }
                       }}
-                      className="px-6 py-4 md:px-10 md:py-5 bg-white/10 hover:bg-white/20 rounded-2xl text-white font-black text-sm md:text-base uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95"
+                      className="px-4 py-3 md:px-10 md:py-5 bg-white/10 hover:bg-white/20 rounded-2xl text-white font-black text-sm md:text-base uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 flex-shrink-0"
                     >
                       Join
                     </button>
