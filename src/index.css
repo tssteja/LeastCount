@@ -27,13 +27,23 @@ body {
   position: relative;
 }
 
+/* Landscape Only Overlay Base */
+.rotate-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #0f172a;
+  z-index: 9999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+}
+
 @media (max-width: 900px) and (orientation: portrait) {
   .rotate-overlay {
     display: flex;
-  }
-
-  .app-content {
-    display: none;
   }
 }
 
@@ -103,19 +113,7 @@ body {
   flex-direction: column;
 }
 
-/* Landscape Only Overlay */
-.rotate-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: #0f172a;
-  z-index: 9999;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 2rem;
-}
+
 
 .game-container {
   height: 100%;

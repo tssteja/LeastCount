@@ -1015,13 +1015,15 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0f172a] font-sans selection:bg-indigo-500/30">
       {/* Landscape Only Overlay */}
-      <div className="rotate-overlay">
-        <div className="w-24 h-24 bg-indigo-600/20 rounded-full flex items-center justify-center mb-6 animate-bounce">
-          <RotateCcw className="w-12 h-12 text-indigo-400" />
+      {(status === GameStatus.DEALING || status === GameStatus.PLAYING || status === GameStatus.ROUND_END) && (
+        <div className="rotate-overlay">
+          <div className="w-24 h-24 bg-indigo-600/20 rounded-full flex items-center justify-center mb-6 animate-bounce">
+            <RotateCcw className="w-12 h-12 text-indigo-400" />
+          </div>
+          <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">Rotate Your Device</h2>
+          <p className="text-white/40 text-sm max-w-[240px]">Please rotate your device to landscape mode for the best gaming experience.</p>
         </div>
-        <h2 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">Rotate Your Device</h2>
-        <p className="text-white/40 text-sm max-w-[240px]">Please rotate your device to landscape mode for the best gaming experience.</p>
-      </div>
+      )}
 
       <div className={`app-content min-h-screen ${status === GameStatus.ROUND_END ? 'game-ended' : ''}`}>
         {status === GameStatus.HOME && (
