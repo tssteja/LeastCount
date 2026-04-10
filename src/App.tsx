@@ -29,7 +29,9 @@ import {
   Volume2,
   VolumeX,
   LogOut,
-  Timer as TimerIcon
+  Timer as TimerIcon,
+  Copy,
+  Check
 } from 'lucide-react';
 
 // --- Types ---
@@ -399,6 +401,7 @@ export default function App() {
   const [playAreaCards, setPlayAreaCards] = useState<CardData[]>([]);
   const [isRoundEnding, setIsRoundEnding] = useState(false);
   const [isCompactLandscape, setIsCompactLandscape] = useState(false);
+  const [copied, setCopied] = useState(false);
   
   // Drag and Drop State
   const [isDragging, setIsDragging] = useState(false);
@@ -487,6 +490,13 @@ export default function App() {
       audio.currentTime = 0;
       audio.play().catch(() => {});
     }
+  };
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(roomCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    showMessage("Room code copied!", "success");
   };
 
   const showMessage = (text: string, type: 'info' | 'error' | 'success' = 'info') => {
@@ -1210,7 +1220,7 @@ export default function App() {
                     <span className="relative bg-[#0f172a] px-4 text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Or Join Room</span>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <input 
                       type="text" 
                       placeholder="ROOM CODE"
@@ -1246,7 +1256,7 @@ export default function App() {
                           showMessage("Invalid room code", "error");
                         }
                       }}
-                      className="px-4 py-3 md:px-10 md:py-5 bg-white/10 hover:bg-white/20 rounded-2xl text-white font-black text-sm md:text-base uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 flex-shrink-0"
+                      className="w-full sm:w-auto px-4 py-3 md:px-10 md:py-5 bg-white/10 hover:bg-white/20 rounded-2xl text-white font-black text-sm md:text-base uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 flex-shrink-0"
                     >
                       Join
                     </button>
@@ -1271,34 +1281,49 @@ export default function App() {
                 <div className="flex-1 space-y-5 md:space-y-8">
                   <div>
                     <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter">Waiting Room</h1>
-                    <div className="mt-2 md:mt-3 px-3 py-1.5 md:px-4 md:py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl inline-flex items-center gap-3">
+                    <div className="mt-2 md:mt-3 px-3 py-1.5 md:px-4 md:py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl inline-flex items-center gap-3 relative group">
                       <span className="text-indigo-400/60 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em]">Room Code:</span>
                       <span className="text-indigo-400 font-mono font-black text-lg md:text-xl tracking-widest">{roomCode}</span>
+                      <button 
+                        onClick={handleCopyCode}
+                        className="p-1.5 hover:bg-indigo-500/20 rounded-lg transition-colors ml-1"
+                        title="Copy to clipboard"
+                      >
+                        {copied ? (
+                          <Check className="w-4 h-4 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-4 h-4 text-indigo-400" />
+                        )}
+                      </button>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Players (1/{playerCount})</label>
+                      <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Players ({players.length}/{playerCount})</label>
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
-                        <div className="relative">
-                          <img src={`https://picsum.photos/seed/${userName}/100`} className="w-10 h-10 md:w-12 md:h-12 rounded-2xl border-2 border-indigo-500" alt="" />
-                          <div className="absolute -top-2 -right-2 bg-indigo-500 text-[8px] font-black text-white px-1.5 py-0.5 rounded-md uppercase">Host</div>
+                      {players.map((p) => (
+                        <div key={p.id} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
+                          <div className="relative">
+                            <img src={p.avatar} className="w-10 h-10 md:w-12 md:h-12 rounded-2xl border-2 border-indigo-500" alt="" />
+                            {p.isHost && (
+                              <div className="absolute -top-2 -right-2 bg-indigo-500 text-[8px] font-black text-white px-1.5 py-0.5 rounded-md uppercase underline-offset-2">Host</div>
+                            )}
+                          </div>
+                          <div className="flex-1 overflow-hidden">
+                            <span className="text-white font-black truncate block text-sm md:text-base">{p.name || "Joining..."}</span>
+                            <span className="text-indigo-400/60 text-[10px] font-bold uppercase tracking-widest">{p.id === playerId ? 'You' : 'Connected'}</span>
+                          </div>
                         </div>
-                        <div className="flex-1 overflow-hidden">
-                          <span className="text-white font-black truncate block text-sm md:text-base">{userName}</span>
-                          <span className="text-indigo-400/60 text-[10px] font-bold uppercase tracking-widest">Connected</span>
-                        </div>
-                      </div>
-                      {Array.from({ length: playerCount - 1 }).map((_, i) => (
-                        <div key={i} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-white/5 border border-white/5 rounded-2xl opacity-40">
+                      ))}
+                      {Array.from({ length: Math.max(0, playerCount - players.length) }).map((_, i) => (
+                        <div key={`empty-${i}`} className="flex items-center gap-3 md:gap-4 p-3 md:p-4 bg-white/5 border border-white/5 rounded-2xl opacity-40">
                           <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
                             <User className="w-5 h-5 md:w-6 md:h-6 text-white/20" />
                           </div>
-                          <span className="text-white/20 font-bold italic text-xs md:text-sm">Waiting...</span>
+                          <span className="text-white/20 font-bold italic text-xs md:text-sm">Waiting for player...</span>
                         </div>
                       ))}
                     </div>
